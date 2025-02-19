@@ -1,0 +1,184 @@
+## Configuration for a Modbus Slave that simulates Xemex CSMB Modbus device
+## Reference: https://esphome.io/components/modbus_controller.html
+modbus_server:
+  - id: modbusserver  # Unique ID for this Modbus server
+    uart_id: uart_slave  # UART interface used for Modbus communication
+    address: 1  # Slave device address on the Modbus network
+    # If you're using a RS485 like this one, make sure to set the re_pin and de_pin
+    # http://domoticx.com/wp-content/uploads/2018/01/RS485-module-shield.jpg
+    # re_pin: GPIO17 # Controls transmit/receive mode
+    # de_pin: GPIO16 # Controls driver enable mode
+
+    ## The following registers store various device parameters
+    ## Reference: # https://xemex.eu/wp-content/uploads/2021/07/User-manual-CSMB-1.0.pdf
+    holding_registers:
+      - start_address: 0x4000 # Register for Serial Number
+        default: 0x1 # Default value returned by a Xemex CSMB
+        number: 2 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x4002 # Register for Device Code
+        default: 20802 # Device identifier value
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x4003 # Register for Device Address
+        default: 0x1 # Default Modbus address
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x4004 # Register for RS485 Baudrate Low
+        default: 9600 # Communication speed in baud
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      ## FLOAT Data Type (Protocol Version as FLOAT) ##
+      - start_address: 0x4005 # Start of FLOAT value for Protocol Version
+        default: 0x3f80 # First 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x4006 # End of FLOAT value for Protocol Version
+        default: 0x0000 # Second 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      ## FLOAT Data Type (Software Version as FLOAT) ##
+      - start_address: 0x4007 # Start of FLOAT value for Software Version
+        default: 0x4000 # First 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x4008 # End of FLOAT value for Software Version
+        default: 0x0000 # Second 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      ## FLOAT Data Type (Hardware Version as FLOAT) ##
+      - start_address: 0x4009 # Start of FLOAT value for Hardware Version
+        default: 0x0000 # First 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x400A # End of FLOAT value for Hardware Version
+        default: 0x0000 # Second 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      ## Additional Holding Registers for Device Configurations ##
+      - start_address: 0x400B # Meter Amps
+        default: 80 # Maximum Amps supported
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x400C # CT Ratio (Current Transformer Ratio)
+        default: 2000 # Scaling factor for current measurement
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x400D # RS485 Line Settings
+        default: 36 # 8 data bits, even parity, and 1 stop bit (8E1)
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x400E # RS485 Line Termination. 
+        default: 1 # Enabled
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      - start_address: 0x400F # RS485 Baudrate High. 
+        default: 0 # Disabled
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "This is a lambda. address=0x%04x, value=%d", address, value);
+          return value; 
+
+      ## RMS Current Measurements for Current Transformers (CTs) ##
+      - start_address: 0x500C # Start of FLOAT value for RMS Current CT1
+        default: 0x0000 # First 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "CT1. address=0x%04x, value=0x%04x", address, value);
+          return value; 
+
+      - start_address: 0x500D # End of FLOAT value for RMS Current CT1.
+        default: 0x0000 # Second 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "CT1. address=0x%04x, value=0x%04x", address, value);
+          return value; 
+
+      - start_address: 0x500E # Start of FLOAT value for RMS Current CT2.
+        default: 0x0000 # First 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "CT2. address=0x%04x, value=0x%04x", address, value);
+          return value; 
+
+      - start_address: 0x500F # End of FLOAT value for RMS Current CT2.
+        default: 0x0000 # Second 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "CT2. address=0x%04x, value=0x%04x", address, value);
+          return value; 
+
+      - start_address: 0x5010 # Start of FLOAT value for RMS Current CT3.
+        default: 0x0000 # First 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "CT3. address=0x%04x, value=0x%04x", address, value);
+          return value; 
+
+      - start_address: 0x5011 # End of FLOAT value for RMS Current CT3.
+        default: 0x0000 # Second 16-bit part of FLOAT
+        number: 1 # Number of consecutive registers in this range
+        on_read: | # called whenever a register in the range is read
+          ESP_LOGI("ON_READ", "CT3. address=0x%04x, value=0x%04x", address, value);
+          return value; 
+
+# Modbus Master Configuration that reads data from the xemex CSMB
+# Documentation: https://esphome.io/components/modbus.html
+modbus:
+  - id: modbus_master # Assigns a unique ID to the Modbus master instance
+    uart_id: uart_master # Specifies the UART (serial interface) that Modbus will use
+
+# Modbus Controller Configuration
+# Documentation: https://esphome.io/components/modbus_controller.html
+modbus_controller:
+  - id: xemex # Assigns an ID to the Modbus controller for the Xemex CSMB device
+    modbus_id: modbus_master # Links this controller to the Modbus master instance
+    address: 0x1 # The Modbus slave/device address (Xemex CSMB default is 0x1)
+    update_interval: never # Prevents automatic data polling; data is only requested manually
+    setup_priority: -10 # Ensures the setup execution order; negative values defer execution
+
+
+
+

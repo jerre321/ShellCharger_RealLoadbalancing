@@ -1,0 +1,111 @@
+substitutions:
+  device_name: "charge-control"
+  friendly_name: "Charger loadbalancing unit"
+  device_comment: "Charge controller load balancing."
+  wifi_ssid: !secret wifi_ssid
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  comment: $device_comment
+  name_add_mac_suffix: false
+  project:
+    name: "POWER.charge-control"
+    version: "1"
+  includes:
+    - my_components/p1reader/p1reader.h
+
+esp32:
+  board: az-delivery-devkit-v4
+  #https://www.az-delivery.de/en/products/esp32-developmentboard
+
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+  level: DEBUG
+  baud_rate: 0 # disable logging over uart
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Allow Over-The-Air updates
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# Example configuration entry
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Optional manual IP
+  manual_ip:
+    static_ip: 192.168.1.40
+    gateway: 192.168.1.1
+    subnet: 255.255.255.0
+
+# In combination with the `ap` this allows the user
+# to provision wifi credentials to the device via WiFi AP.
+captive_portal:
+
+  # Enable Web server
+web_server:
+  port: 80
+
+# see: https://esphome.io/components/time.html
+time:
+  - platform: homeassistant
+## end common.yaml
+
+#Load external components from /homeassistant/esphome/my_components/
+external_components:
+#  modbus_server: https://github.com/thomase1234/esphome-fake-xemex-csmb
+#  p1reader: https://github.com/psvanstrom/esphome-p1reader
+  - source:
+      type: local
+      path: my_components
+
+#Configure UART configuration for ESP32
+# https://cdn.shopify.com/s/files/1/1509/1638/files/ESP-32_NodeMCU_Developmentboard_Pinout.pdf
+uart:
+  - id: uart_p1reader
+    rx_pin:
+      number: GPIO3
+      inverted: true
+    baud_rate: 115200
+    rx_buffer_size: 1700
+  - id: uart_slave
+    tx_pin: 16 # DI PURPLE wire
+    rx_pin: 17 # RO BLUE  wire
+    baud_rate: 9600   # default for Xemex CMSB
+    stop_bits: 1 #default to 8E1
+    data_bits: 8 #default to 8E1
+    parity: EVEN #default to 8E1
+    debug:
+      direction: BOTH
+  - id: uart_master
+    tx_pin: 18 # DI PURPLE wire
+    rx_pin: 19 # RO BLUE  wire
+    baud_rate: 9600   # default for Xemex CMSB
+    stop_bits: 1 #default to 8E1
+    data_bits: 8 #default to 8E1
+    parity: EVEN #default to 8E1
+    debug:
+      direction: BOTH
+
+# https://esphome.io/components/sensor/dsmr.html#bridging-support-raw-telegram-logging
+dsmr:
+  uart_id: uart_p1reader
+  request_pin: GPIO1
+  request_interval: 2s
+  max_telegram_length: 1700
+  crc_check: true
+
+<<: !include charge_control/modbus.yaml
+<<: !include charge_control/number.yaml
+<<: !include charge_control/sensor.yaml
+

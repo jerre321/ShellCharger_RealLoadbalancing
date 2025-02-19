@@ -1,0 +1,121 @@
+number:
+  # Charge Mode - Defines the charging mode with different levels
+  - platform: template
+    name: "Laad mode"   # Charging mode
+    id: charge_mode
+    optimistic: true    # Allows updating state without confirmation from hardware
+    min_value: 0        # Minimum mode level
+    max_value: 5        # Maximum mode level
+    step: 1             # Increment step
+    unit_of_measurement: "Mode"
+    initial_value: 0    # Default starting mode
+    mode: slider        # UI control type
+    restore_value: true # Restore last known value on restart
+
+  # Charge Connection - Defines how many phases are used for charging        
+  - platform: template
+    name: "Laad aansluiting" # Charging connection phase selection
+    id: charge_connection
+    optimistic: true    # Allows updating state without confirmation from hardware
+    min_value: 1        # Minimum phase (single-phase)
+    max_value: 3        # Maximum phase (three-phase)
+    step: 2             # Increment step
+    unit_of_measurement: "Fase(s)"
+    initial_value: 1    # Default phase setting
+    mode: slider        # UI control type
+    restore_value: true # Restore last known value on restart
+
+  # Desired Net Consumption Offset Current
+  - platform: template
+    id: net_offset_current
+    name: "Gewenst offset stroom net verbruik" # Desired offset current for net consumption
+    optimistic: true    # Allows updating state without confirmation from hardware
+    min_value: 0.0      # Minimum current offset (Amps)
+    max_value: 10.0     # Maximum current offset
+    step: 0.1           # Small incremental steps
+    initial_value: 1.0  # Default value
+    unit_of_measurement: "A"
+    mode: box           # UI control type is a text box
+    restore_value: true # Restore last known value on restart
+
+  # Manual Charge Point Current Setpoint
+  - platform: template
+    id: chargepoint_manual_current_sp
+    name: "Laadpunt manueel stroom setpunt" # Manual charge point current setpoint
+    optimistic: true    # Allows updating state without confirmation from hardware
+    min_value: 1.0      # Minimum setpoint charging current
+    max_value: 16.0     # Maximum setpoint charging current
+    step: 1.0           # Increment step
+    initial_value: 6.0  # Default value
+    unit_of_measurement: "A"
+    mode: box           # UI control type is a text box
+    restore_value: true # Restore last known value on restart
+    on_value:
+      then:
+        - lambda: |-
+            if (id(chargepoint_manual_current_sp).state < id(chargepoint_minimal_current).state) {
+              id(chargepoint_manual_current_sp).publish_state(id(chargepoint_minimal_current).state);
+            }
+
+  # Minimal Charging Current Allowed
+  - platform: template
+    id: chargepoint_minimal_current
+    name: "Minimale laadstroom" # Minimum charging current allowed
+    optimistic: true    # Allows updating state without confirmation from hardware
+    min_value: 6.0      # Minimum limit (Car doesn't start changing when lower)
+    max_value: 16.0     # Upper limit
+    step: 1.0           # Increment step
+    initial_value: 8.0  # Default value
+    unit_of_measurement: "A"
+    mode: box           # UI control type is a text box
+    restore_value: true # Restore last known value on restart
+    on_value:
+      then:
+        - lambda: |-
+            if (id(chargepoint_manual_current_sp).state < id(chargepoint_minimal_current).state) {
+              id(chargepoint_manual_current_sp).publish_state(id(chargepoint_minimal_current).state);
+            }
+            if (id(chargepoint_maximal_current).state < id(chargepoint_minimal_current).state) {
+              id(chargepoint_maximal_current).publish_state(id(chargepoint_minimal_current).state);
+            }
+            if (id(net_maximal_current).state < id(chargepoint_minimal_current).state) {
+              id(net_maximal_current).publish_state(id(chargepoint_minimal_current).state);
+            }
+
+  # Maximum Charging Current Allowed
+  - platform: template
+    id: chargepoint_maximal_current
+    name: "Maximale laadstroom" # Maximum charging current allowed
+    optimistic: true    # Allows updating state without confirmation from hardware
+    min_value: 8.0      # Minimum limit
+    max_value: 60.0     # Maximum charging limit (Solar + net)
+    step: 0.1           # Small incremental steps
+    initial_value: 30.0 # Default value
+    unit_of_measurement: "A"
+    mode: box           # UI control type is a text box
+    restore_value: true # Restore last known value on restart
+    on_value:
+      then:
+        - lambda: |-
+            if (id(chargepoint_maximal_current).state < id(chargepoint_minimal_current).state) {
+              id(chargepoint_maximal_current).publish_state(id(chargepoint_minimal_current).state);
+            }
+
+  # Maximum Current Allowed by the Main Fuse
+  - platform: template
+    id: net_maximal_current
+    name: "Hoofdzekering maximum stroom" # Main fuse max current
+    optimistic: true    # Allows updating state without confirmation from hardware
+    min_value: 10.0     # Minimum safety value
+    max_value: 40.0     # Maximum current limit
+    step: 0.1           # Small incremental steps
+    initial_value: 32.0 # Default fuse max current
+    unit_of_measurement: "A"
+    mode: box           # UI control type is a text box
+    restore_value: true # Restore last known value on restart
+    on_value:
+      then:
+        - lambda: |-
+            if (id(net_maximal_current).state < id(chargepoint_minimal_current).state) {
+              id(net_maximal_current).publish_state(id(chargepoint_minimal_current).state);
+            }

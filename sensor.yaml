@@ -1,0 +1,606 @@
+sensor:
+  - platform: modbus_controller
+    modbus_controller_id: xemex
+    id: charge_consuption_i_l1
+    name: "Laadpaal stroomverbruik l1"
+    device_class: "current"
+    address: 0x500C
+    unit_of_measurement: "A"
+    register_type: holding
+    value_type: FP32
+    accuracy_decimals: 2
+
+  - platform: modbus_controller
+    modbus_controller_id: xemex
+    id: charge_consuption_i_l2
+    name: "Laadpaal stroomverbruik l2"
+    device_class: "current"
+    address: 0x500E
+    unit_of_measurement: "A"
+    register_type: holding
+    value_type: FP32
+    accuracy_decimals: 2
+
+  - platform: modbus_controller
+    modbus_controller_id: xemex
+    id: charge_consuption_i_l3
+    name: "Laadpaal stroomverbruik l3"
+    device_class: "current"
+    address: 0x5010
+    unit_of_measurement: "A"
+    register_type: holding
+    value_type: FP32
+    accuracy_decimals: 2
+
+  # DSMR sensor voor Fluvius
+  - platform: dsmr
+    power_delivered:
+      id: power_delivered
+      name: "Fluvius Power Consumed"
+      accuracy_decimals: 3
+    power_returned:
+      id: power_returned
+      name: "Fluvius Power Produced"
+      accuracy_decimals: 3
+    current_l1:
+      id: current_l3
+      name: "Fluvius Current Phase 3"
+      accuracy_decimals: 2
+    current_l2:
+      id: current_l1
+      name: "Fluvius Current Phase 1"
+      accuracy_decimals: 2
+    current_l3:
+      id: current_l2
+      name: "Fluvius Current Phase 2"
+      accuracy_decimals: 2
+      on_value:
+        then:
+          - component.update: xemex
+          - if:
+              condition:
+                lambda: 'return id(charge_connection).state == 1;'
+              then:
+                - component.update: net_consuption_i_tot
+                - component.update: net_injection_i_tot
+                - component.update: available_i_tot
+                - component.update: setpoint_charge
+                - component.update: control_err_laad
+                - component.update: control_err_net
+              else:
+                - component.update: net_consuption_i_l1
+                - component.update: net_consuption_i_l2
+                - component.update: net_consuption_i_l3
+                - component.update: net_injection_i_l1
+                - component.update: net_injection_i_l2
+                - component.update: net_injection_i_l3
+                - component.update: available_i_l1
+                - component.update: available_i_l2
+                - component.update: available_i_l3
+                - component.update: setpoint_charge_l1
+                - component.update: setpoint_charge_l2
+                - component.update: setpoint_charge_l3
+                - component.update: control_err_laad_l1
+                - component.update: control_err_laad_l2
+                - component.update: control_err_laad_l3
+                - component.update: control_err_net_l1
+                - component.update: control_err_net_l2
+                - component.update: control_err_net_l3
+          
+          - component.update: control_output_l1
+          - component.update: control_output_l2
+          - component.update: control_output_l3
+          
+    gas_delivered_be:
+      name: "Fluvius Gas Consumed"
+      accuracy_decimals: 5
+    active_energy_import_current_average_demand:
+      name: "Fluvius Current Average Quarterly Demand for Peak Tarrif"
+      accuracy_decimals: 3
+    active_energy_import_maximum_demand_running_month:
+      name: "Fluvius Current Month’s Maximum Quarterly Demand for Peak Tarrif"
+      accuracy_decimals: 3
+    active_energy_import_maximum_demand_last_13_months:
+      name: "Fluvius Month Maximum Quarterly Demand for Peak Tarrif"
+      accuracy_decimals: 3
+
+  - platform: template
+    name: "Net stroomverbruik l1"
+    id: net_consuption_i_l1
+    lambda: |-
+      if (id(power_delivered).state >= 0 ) {
+        return id(current_l1).state;
+      } else {
+        return 0.0;
+      }
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Net stroomverbruik l2"
+    id: net_consuption_i_l2
+    lambda: |-
+      if (id(power_delivered).state > 0 ) {
+        return id(current_l2).state;
+      } else {
+        return 0.0;
+      }
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Net stroomverbruik l3"
+    id: net_consuption_i_l3
+    lambda: |-
+      if (id(power_delivered).state > 0 ) {
+        return id(current_l3).state;
+      } else {
+        return 0.0;
+      }
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+
+  - platform: template
+    name: "Net stroomverbruik"
+    id: net_consuption_i_tot
+    lambda: |-
+      if (id(power_delivered).state > 0 ) {
+        return id(current_l1).state + id(current_l2).state + id(current_l3).state;
+      } else {
+        return 0.0;
+      }
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+  
+  - platform: template
+    name: "Net stroominjectie l1"
+    id: net_injection_i_l1
+    lambda: |-
+      if (id(power_delivered).state <= 0 ) {
+        return id(current_l1).state;
+      } else {
+        return 0.0;
+      }
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Net stroominjectie l2"
+    id: net_injection_i_l2
+    lambda: |-
+      if (id(power_delivered).state <= 0 ) {
+        return id(current_l2).state;
+      } else {
+        return 0.0;
+      }
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Net stroominjectie l3"
+    id: net_injection_i_l3
+    lambda: |-
+      if (id(power_delivered).state <= 0 ) {
+        return id(current_l3).state;
+      } else {
+        return 0.0;
+      }
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Net stroominjectie"
+    id: net_injection_i_tot
+    lambda: |-
+      if (id(power_delivered).state < 0 ) {
+        return id(current_l1).state + id(current_l2).state + id(current_l3).state;
+      } else {
+        return 0.0;
+      }
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+
+  - platform: template
+    name: "Beschikbare stroom l1"
+    id: available_i_l1
+    lambda: |-
+      return id(net_maximal_current).state - id(net_consuption_i_l1).state + id(net_injection_i_l1).state;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Beschikbare stroom l2"
+    id: available_i_l2
+    lambda: |-
+      return id(net_maximal_current).state - id(net_consuption_i_l2).state + id(net_injection_i_l2).state;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Beschikbare stroom l3"
+    id: available_i_l3
+    lambda: |-
+      return id(net_maximal_current).state - id(net_consuption_i_l3).state + id(net_injection_i_l3).state;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Beschikbare stroom"
+    id: available_i_tot
+    lambda: |-
+      return id(net_maximal_current).state - id(net_consuption_i_tot).state + id(net_injection_i_tot).state;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+
+#charge_mode:
+# 0: Uit
+# 1: Manueel
+# 2: Max
+# 3: Min
+# 4: Min+zon
+# 5: Controller uit
+
+#charge_connection:
+# 1: Single-Phase
+# else: Three-Phase
+    
+  - platform: template
+    name: "Setpunt stroom laadpaal L1"
+    id: setpoint_charge_l1
+    lambda: |-
+      if (id(charge_mode).state == 0 || id(charge_mode).state == 5) {
+        return 0;
+      }
+      if (id(available_i_l1).state < id(chargepoint_minimal_current).state) {
+        return 0;
+      }
+
+      float min_value;
+      if (id(charge_mode).state == 3) {
+        min_value = id(chargepoint_minimal_current).state;
+      } else if (id(charge_mode).state == 4) {
+        if (id(net_injection_i_l1).state == 0 && id(net_consuption_i_l1).state > id(chargepoint_minimal_current).state) {
+          min_value =  id(setpoint_charge_l1).state + (id(chargepoint_minimal_current).state - id(net_consuption_i_l1).state);
+        } else {
+          min_value =  id(setpoint_charge_l1).state + id(net_injection_i_l1).state;
+        }
+      } else if (id(charge_mode).state == 2) {
+        min_value = id(chargepoint_maximal_current).state;
+      } else if (id(charge_mode).state == 1) {
+        min_value = id(chargepoint_manual_current_sp).state;
+      } else {
+        min_value = 0;
+      }
+      ESP_LOGD("setpoint_charge_l1", "min_value: %.3f A", min_value);
+      return std::max(id(chargepoint_minimal_current).state, std::min(min_value, std::min(id(available_i_l1).state, id(net_maximal_current).state)));
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Setpunt stroom laadpaal L2"
+    id: setpoint_charge_l2
+    lambda: |-
+      if (id(charge_mode).state == 0 || id(charge_mode).state == 5) {
+        return 0;
+      }
+      if (id(available_i_l2).state < id(chargepoint_minimal_current).state) {
+        return 0;
+      }
+
+      float min_value;
+      if (id(charge_mode).state == 3) {
+        min_value = id(chargepoint_minimal_current).state;
+      } else if (id(charge_mode).state == 4) {
+        if (id(net_injection_i_l2).state == 0 && id(net_consuption_i_l2).state > id(chargepoint_minimal_current).state) {
+          min_value =  id(setpoint_charge_l2).state + (id(chargepoint_minimal_current).state - id(net_consuption_i_l2).state);
+        } else {
+          min_value =  id(setpoint_charge_l2).state + id(net_injection_i_l2).state;
+        }
+      } else if (id(charge_mode).state == 2) {
+        min_value = id(chargepoint_maximal_current).state;
+      } else if (id(charge_mode).state == 1) {
+        min_value = id(chargepoint_manual_current_sp).state;
+      } else {
+        min_value = 0;
+      }
+      ESP_LOGD("setpoint_charge_l2", "min_value: %.3f A", min_value);
+      return std::max(id(chargepoint_minimal_current).state, std::min(min_value, std::min(id(available_i_l2).state, id(net_maximal_current).state)));
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Setpunt stroom laadpaal L3"
+    id: setpoint_charge_l3
+    lambda: |-
+      if (id(charge_mode).state == 0 || id(charge_mode).state == 5) {
+        return 0;
+      }
+      if (id(available_i_l3).state < id(chargepoint_minimal_current).state) {
+        return 0;
+      }
+
+      float min_value;
+      if (id(charge_mode).state == 3) {
+        min_value = id(chargepoint_minimal_current).state;
+      } else if (id(charge_mode).state == 4) {
+        if (id(net_injection_i_l3).state == 0 && id(net_consuption_i_l3).state > id(chargepoint_minimal_current).state) {
+          min_value =  id(setpoint_charge_l3).state + (id(chargepoint_minimal_current).state - id(net_consuption_i_l3).state);
+        } else {
+          min_value =  id(setpoint_charge_l3).state + id(net_injection_i_l3).state;
+        }
+      } else if (id(charge_mode).state == 2) {
+        min_value = id(chargepoint_maximal_current).state;
+      } else if (id(charge_mode).state == 1) {
+        min_value = id(chargepoint_manual_current_sp).state;
+      } else {
+        min_value = 0;
+      }
+      ESP_LOGD("setpoint_charge_l3", "min_value: %.3f A", min_value);
+      return std::max(id(chargepoint_minimal_current).state, std::min(min_value, std::min(id(available_i_l3).state, id(net_maximal_current).state)));
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "Setpunt stroom laadpaal"
+    id: setpoint_charge
+    lambda: |-
+      if (id(charge_mode).state == 0 || id(charge_mode).state == 5) {
+        return 0;
+      }
+      if (id(available_i_tot).state < id(chargepoint_minimal_current).state) {
+        return 0;
+      }
+
+      float min_value;
+      if (id(charge_mode).state == 3) {
+        min_value = id(chargepoint_minimal_current).state;
+      } else if (id(charge_mode).state == 4) {
+        if (id(net_injection_i_tot).state == 0 && id(net_consuption_i_tot).state > id(chargepoint_minimal_current).state) {
+          min_value =  id(setpoint_charge).state + (id(chargepoint_minimal_current).state - id(net_consuption_i_tot).state);
+        } else {
+          min_value =  id(setpoint_charge).state + id(net_injection_i_tot).state;
+        }
+      } else if (id(charge_mode).state == 2) {
+        min_value = id(chargepoint_maximal_current).state;
+      } else if (id(charge_mode).state == 1) {
+        min_value = id(chargepoint_manual_current_sp).state;
+      } else {
+        min_value = 0;
+      }
+      ESP_LOGD("setpoint_charge", "min_value: %.3f A", min_value);
+      return std::max(id(chargepoint_minimal_current).state, std::min(min_value, std::min(id(available_i_tot).state, id(net_maximal_current).state)));
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+
+  - platform: template
+    name: "control error laad L1"
+    id: control_err_laad_l1
+    lambda: |-
+      return id(charge_consuption_i_l1).state - id(setpoint_charge_l1).state;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control error laad L2"
+    id: control_err_laad_l2
+    lambda: |-
+      return id(charge_consuption_i_l2).state - id(setpoint_charge_l2).state;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control error laad L3"
+    id: control_err_laad_l3
+    lambda: |-
+      return id(charge_consuption_i_l3).state - id(setpoint_charge_l3).state;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control error laad"
+    id: control_err_laad
+    lambda: |-
+      return id(charge_consuption_i_l1).state - id(setpoint_charge).state; 
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control error net L1"
+    id: control_err_net_l1
+    lambda: |-
+      return id(net_consuption_i_l1).state - (id(setpoint_charge_l1).state + id(net_offset_current).state);
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control error net L2"
+    id: control_err_net_l2
+    lambda: |-
+      return id(net_consuption_i_l2).state - (id(setpoint_charge_l2).state + id(net_offset_current).state);
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control error net L3"
+    id: control_err_net_l3
+    lambda: |-
+      return id(net_consuption_i_l3).state - (id(setpoint_charge_l3).state + id(net_offset_current).state);
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control error net"
+    id: control_err_net
+    lambda: |-
+      return id(net_consuption_i_tot).state - (id(setpoint_charge).state + id(net_offset_current).state);
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control output L1"
+    id: control_output_l1
+    lambda:  |-
+      float value;
+      if (id(charge_connection).state == 1) {
+        if (id(charge_mode).state == 5) {
+          value = id(current_l1).state + id(current_l2).state + id(current_l3).state;
+        } else if (id(charge_mode).state == 0) {
+          value = id(net_maximal_current).state;
+        } else {
+          value = std::min(id(chargepoint_maximal_current).state + std::max(id(control_err_laad).state, id(control_err_net).state), id(chargepoint_maximal_current).state * 2);
+        }
+      } else {
+        if (id(charge_mode).state == 5) {
+          value = id(current_l1).state;
+        } else if (id(charge_mode).state == 0) {
+          value = id(net_maximal_current).state;
+        } else {
+          value = std::min(id(chargepoint_maximal_current).state + std::max(id(control_err_laad_l1).state, id(control_err_net_l1).state), id(chargepoint_maximal_current).state * 2);
+        }
+      }
+            
+      ESP_LOGD("modbus-server-xemex", "Current set to: %f", value);
+      // convert from float to 2 uint16_t. 
+      union 
+      {
+        uint16_t x_int[2];
+        float x_f;
+      } u;
+      u.x_f = value;
+      // setting modbusserver registers
+      // use https://www.h-schmidt.net/FloatConverter/IEEE754.html to doublecheck conversions
+      modbusserver->write_holding_register(0x500C,u.x_int[1]);
+      modbusserver->write_holding_register(0x500D,u.x_int[0]);
+      ESP_LOGD("modbus-server-xemex", "Registers for CT1 set to: 0x%04x and 0x%04x", u.x_int[1], u.x_int[0]);
+
+      return value;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control output L2"
+    id: control_output_l2
+    lambda:  |-
+      float value;
+      if (id(charge_connection).state == 1) {
+        value =  0;
+      } else {
+        
+        if (id(charge_mode).state == 5) {
+          value = id(current_l2).state;
+        } else if (id(charge_mode).state == 0) {
+          value = id(net_maximal_current).state;
+        } else {
+          value = std::min(id(chargepoint_maximal_current).state + std::max(id(control_err_laad_l2).state, id(control_err_net_l2).state), id(chargepoint_maximal_current).state * 2);
+        }
+      }
+      
+      ESP_LOGD("modbus-server-xemex", "Current set to: %f", value);
+      // convert from float to 2 uint16_t. 
+      union 
+      {
+        uint16_t x_int[2];
+        float x_f;
+      } u;
+      u.x_f = value;
+      // setting modbusserver registers
+      // use https://www.h-schmidt.net/FloatConverter/IEEE754.html to doublecheck conversions
+      modbusserver->write_holding_register(0x500E,u.x_int[1]);
+      modbusserver->write_holding_register(0x500F,u.x_int[0]);
+      ESP_LOGD("modbus-server-xemex", "Registers for CT2 set to: 0x%04x and 0x%04x", u.x_int[1], u.x_int[0]);
+
+      return value;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+    
+  - platform: template
+    name: "control output L3"
+    id: control_output_l3
+    lambda:  |-
+      float value;
+      if (id(charge_connection).state == 1) {
+        value = 0;
+      } else {
+        
+        if (id(charge_mode).state == 5) {
+          value = id(current_l3).state;
+        } else if (id(charge_mode).state == 0) {
+          value = id(net_maximal_current).state;
+        } else {
+          value = std::min(id(chargepoint_maximal_current).state + std::max(id(control_err_laad_l3).state, id(control_err_net_l3).state), id(chargepoint_maximal_current).state * 2);
+        }
+      }
+
+      ESP_LOGD("modbus-server-xemex", "Current set to: %f", value);
+      // convert from float to 2 uint16_t. 
+      union 
+      {
+        uint16_t x_int[2];
+        float x_f;
+      } u;
+      u.x_f = value;
+      // setting modbusserver registers
+      // use https://www.h-schmidt.net/FloatConverter/IEEE754.html to doublecheck conversions
+      modbusserver->write_holding_register(0x5010,u.x_int[1]);
+      modbusserver->write_holding_register(0x5011,u.x_int[0]);
+      ESP_LOGD("modbus-server-xemex", "Registers for CT3 set to: 0x%04x and 0x%04x", u.x_int[1], u.x_int[0]);
+      // and finally set the value of this number template
+
+      return value;
+    accuracy_decimals: 2
+    unit_of_measurement: A
+    device_class: current
+    update_interval: never  # Disable automatic interval updates
+
