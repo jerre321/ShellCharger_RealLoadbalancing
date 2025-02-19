@@ -1,7 +1,13 @@
 # ShellCharger_RealLoadbalancing
 ESPHome ShellCharger real load balancing
 
-Started from https://github.com/thomase1234/esphome-fake-xemex-csmb
+Started from:
+• https://github.com/thomase1234/esphome-fake-xemex-csmb
+• https://github.com/psvanstrom/esphome-p1reader
+
+Requirements:
+• https://github.com/thomase1234/esphome-fake-xemex-csmb/tree/master/esphome/components/modbus_server
+• https://github.com/psvanstrom/esphome-p1reader/blob/main/p1reader.h
 
 ## This project uses the folowing hardware:
 • Shell Recharge 3.0 Wallbox
