@@ -19,7 +19,7 @@ Started from https://github.com/thomase1234/esphome-fake-xemex-csmb
 #ESPHome Web UI:
 ![image](https://github.com/user-attachments/assets/3a5dff7e-979f-4859-bc48-2cd6586a3635)
 
-#Posible Home Assisstant look:
+#Possible Home Assisstant look:
 ![image](https://github.com/user-attachments/assets/afe42353-7364-4ff3-af50-cf3036fdb0a0)
 
 
