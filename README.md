@@ -1,7 +1,7 @@
 # ShellCharger_RealLoadbalancing
 ESPHome ShellCharger real load balancing
 
-## This project used the folowing hardware:
+## This project uses the folowing hardware:
 • Shell Recharge 3.0 Wallbox
 
 • Fluvius P1 meter readout
