@@ -1,6 +1,8 @@
 # ShellCharger_RealLoadbalancing
 ESPHome ShellCharger real load balancing
 
+Started from https://github.com/thomase1234/esphome-fake-xemex-csmb
+
 ## This project uses the folowing hardware:
 • Shell Recharge 3.0 Wallbox
 
